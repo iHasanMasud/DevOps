@@ -1,99 +1,105 @@
 ### Create two Namespaces and connect them using Linux bridge.
 
-1. In the terminal, run the following commands to create the namespaces:
+#### Prerequisites
+Ensure that your system supports the creation of network namespaces and bridging. You may need to install the bridge-utils package if it's not already installed.
 
-    ```bash
-    sudo ip netns add ns1
-    ```
+```bash
+sudo apt-get install bridge-utils
+```
 
-    ```bash
-    sudo ip netns add ns2
-    ```
+##### 1. Enable IP Forwarding
+In the terminal, run the following command to enable IP forwarding:
 
-2. Create Linux Bridge:
+```bash
+sudo sysctl -w net.ipv4.ip_forward=1
+```
 
-    ```bash
-   sudo brctl addbr mybridge
-    ```
-   2.1 If brctl is not installed, install it using the following command:
+##### 2. Create two namespaces
+In the terminal, run the following commands to create the namespaces:
 
-    ```bash
-    sudo apt-get install bridge-utils
-    ```
+```bash
+sudo ip netns add ns1
+```
 
-3. Create Virtual Ethernet (veth) pairs:
+```bash
+sudo ip netns add ns2
+```
 
-    ```bash
-    sudo ip link add veth-ns1 type veth peer name veth-br1
-    ```
+##### 3. Create Virtual Ethernet (veth) Pairs
+In the terminal, run the following commands to create the veth pairs:
 
-    ```bash
-    sudo ip link add veth-ns2 type veth peer name veth-br2
-    ```
+```bash
+sudo ip link add veth0 type veth peer name veth-br1
+```
 
-4. Connect Namespaces to Bridge:
+```bash
+sudo ip link add veth1 type veth peer name veth-br2
+```
 
-    ```bash
-    sudo ip link set veth-ns1 netns ns1
-    ```
+##### 4. Move veth Interfaces to Respective Namespaces
+In the terminal, run the following commands to move the veth interfaces to the respective namespaces:
 
-    ```bash
-    sudo ip link set veth-ns2 netns ns2
-    ```
+```bash
+sudo ip link set veth0 netns ns1
+```
 
-5. Configure Interfaces inside Namespaces:
+```bash
+sudo ip link set veth1 netns ns2
+```
 
-    ```bash 
-    sudo ip netns exec ns1 ip link set dev lo up
-    ```
+##### 5. Configure IP Addresses in the namespaces
+In the terminal, run the following commands to configure IP addresses in the namespaces:
 
-    ```bash
-    sudo ip netns exec ns1 ip link set dev veth-ns1 up
-    ```
+```bash
+sudo ip netns exec ns1 ip addr add 10.0.0.1/24 dev veth0
+```
 
-    ```bash
-    sudo ip netns exec ns1 ip addr add 192.168.1.1/24 dev veth-ns1
-    ```
-   <br>
+```bash
+sudo ip netns exec ns2 ip addr add 10.0.0.2/24 dev veth1
+```
 
-    ```bash
-    sudo ip netns exec ns2 ip link set dev lo up
-    ```
+##### 6. Set up Interfaces in Namespaces
+In the terminal, run the following commands to set up the interfaces in the namespaces:
 
-    ```bash
-    sudo ip netns exec ns2 ip link set dev veth-ns2 up
-    ```
+```bash
+sudo ip netns exec ns1 ip link set veth0 up
+```
 
-    ```bash
-    sudo ip netns exec ns2 ip addr add 192.168.1.2/24 dev veth-ns2
-    ```
+```bash
+sudo ip netns exec ns2 ip link set veth1 up
+```
 
-6. Connect veth pairs to Bridge
+##### 7. Create Bridge and Attach veth Interfaces
+In the terminal, run the following commands to create a bridge and attach the veth interfaces to it:
 
-    ```bash
-    sudo brctl addif mybridge veth-br1
-    ```
+```bash
+sudo brctl addbr br0
+```
 
-    ```bash
-    sudo brctl addif mybridge veth-br2
-    ```
+```bash
+sudo brctl addif br0 veth-br1
+```
 
-7. Bring up the Bridge:
+```bash
+sudo brctl addif br0 veth-br2
+```
 
-    ```bash
-    sudo ip link set dev mybridge up
-    ```
-   
-8. Test the connectivity between the two namespaces, open two terminals and run the following commands in each terminal:
-   
-    ###### In the first terminal, run the following command to ping ns2 from ns1:
-          
-     ```bash
-     sudo ip netns exec ns1 ping 192.168.1.2
-     ```
-    ######  In the second terminal, run the following command to ping ns1 from ns2:
+##### 8. Enable the Bridge and Set IP Address
+In the terminal, run the following commands to enable the bridge and set an IP address for it:
 
-     ```bash
-    sudo ip netns exec ns2 ping 192.168.1.1
-     ```
+```bash
+sudo ip link set br0 up
+```
+
+##### 9. Test Connectivity
+Test the connectivity between the two namespaces by running the following commands in each namespace:
+    
+ ```bash
+sudo ip netns exec ns1 ping -c 3 10.0.0.2
+```
+
+```bash
+sudo ip netns exec ns2 ping -c 3 10.0.0.1
+```
+
    
