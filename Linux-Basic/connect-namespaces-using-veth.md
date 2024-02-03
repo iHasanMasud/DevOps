@@ -16,7 +16,7 @@
    sudo ip link add veth0 type veth peer name veth1
     ```
    
-3. Connect the veth0 end to ns1 and the veth2 end to ns2:
+3. Connect the veth0 end to ns1 and the veth1 end to ns2:
 
     ```bash
     sudo ip link set veth0 netns ns1
@@ -26,7 +26,7 @@
     sudo ip link set veth1 netns ns2
     ```
    
-4. Assign IP addresses to the veth0 and veth2 interfaces:
+4. Assign IP addresses to the veth0 and veth1 interfaces:
 
     ```bash
     sudo ip netns exec ns1 ip addr add 10.0.0.1/24 dev veth0
